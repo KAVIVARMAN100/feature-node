@@ -1,0 +1,1 @@
+(window.webpackJsonp=window.webpackJsonp||[]).push([[1],{ES73:function(n,o,r){"use strict";r.d(o,"a",(function(){return c}));var t=r("fXoL");let c=(()=>{class n{constructor(){}}return n.\u0275fac=function(o){return new(o||n)},n.\u0275prov=t.Kb({token:n,factory:n.\u0275fac,providedIn:"root"}),n})()}}]);
