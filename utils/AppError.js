@@ -4,7 +4,7 @@ class AppError extends Error {
         super(message);
         this.statusCode = statusCode;
         this.status = status;
-        this.isOperational = true; // To differentiate operational errors from programming or other unknown errors
+        this.isOperational = true;
 
         Error.captureStackTrace(this, this.constructor);
     }

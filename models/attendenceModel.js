@@ -1,7 +1,6 @@
 import { DataTypes } from 'sequelize';
 import db from '../config/database.js';
 
-// Define the Attendance model
 const Attendance = db.define('attendance_tb', {
     id: {
         type: DataTypes.BIGINT,
@@ -19,7 +18,7 @@ const Attendance = db.define('attendance_tb', {
     },
     attended: {
         type: DataTypes.STRING(50),
-        allowNull: true // Adjust as per your application logic
+        allowNull: true
     },
     attended_date: {
         type: DataTypes.DATE,
@@ -31,8 +30,7 @@ const Attendance = db.define('attendance_tb', {
     }
 }, {
     tableName: 'attendance_tb',
-    timestamps: false // Disable Sequelize's default timestamp fields (createdAt, updatedAt)
+    timestamps: false
 });
 
-// Export the Attendance model
 export default Attendance;

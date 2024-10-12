@@ -2,18 +2,13 @@
 import Department from '../../../models/departmentModel.js';
 import User from '../../../models/userModel.js';
 
-export const fetchMinistryDepartmentRelationship = async (req, res) => {
-    console.log("here it is coming");
-    
+export const fetchMinistryDepartmentRelationship = async (req, res) => {    
     try {
         const userId = req.query.user_id;
-        let usertypeId = req.query.user_type;
-
+        let usertypeId = req.query.user_type;  
         if (userId) {
-            const user = await User.findOne({ where: { user_id: userId } });
-            
-            // const typeId = parseInt(user.dataValues.user_type);
-            const typeId = 102
+            const user = await User.findOne({ where: { user_id: userId } });   
+             const typeId = parseInt(user.dataValues.user_type);
 
             if ((typeId >= 101 && typeId <= 113) || typeId === 115 || typeId === 114) {
                 const departments = await Department.findAll({

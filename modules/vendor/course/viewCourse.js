@@ -1,5 +1,4 @@
-// controllers/courseController.js
-import Course from '../../../models/courseModel.js'; 
+ import Course from '../../../models/courseModel.js'; 
 import User from '../../../models/userModel.js'; 
 import CourseCandidate from '../../../models/courseCandidateModel.js'
 import { fn, col } from 'sequelize';
@@ -7,11 +6,11 @@ import { fn, col } from 'sequelize';
 
 
 export const viewCourse = async (req, res) => {
-  const userId = req.body.user_id;
-  const isAll = req.body.is_all;
-  const catId = req.body.catId;
-  let courses = [];
-  let usertypeId = '';
+  const userId = req.query.user_id;
+  const isAll = req.query.is_all;
+  const catId = req.query.catId;
+  let usertypeId = "";
+  let course = [];
 
   if (userId) {
     try {
@@ -60,8 +59,9 @@ export const viewCourse = async (req, res) => {
         } else {
           return res.status(400).json({ error: 'Invalid user type.' });
         }
-        courses = await Course.findAll(queryOptions);
-        return res.json({ data: courses });
+        
+        course = await Course.findAll(queryOptions);
+        return res.json({ data: course });
       } else {
         return res.status(400).json({ error: 'Not enough information' });
       }
@@ -72,5 +72,7 @@ export const viewCourse = async (req, res) => {
     return res.json({ data: [] });
   }
 };
+
+ 
 
 

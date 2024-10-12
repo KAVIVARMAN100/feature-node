@@ -1,16 +1,15 @@
-// Assuming you have already set up your models and their associations
 
-// services/courseService.js
-import { Course, CourseCandidate } from '../models'; // Adjust the model import based on your structure
 import Course from '../../../models/courseModel.js';
 import CourseCandidate from '../../../models/courseCandidateModel.js';
+
 
 
 export const getAllCourses = async (req, res) => {
   try {
     const subCategoryId = req.query.id;
-    const offset = parseInt(req.query.offset, 10) || 0;
-    const limit = parseInt(req.query.limit, 10) || 10;
+    const offset = req.query.offset ? parseInt(req.query.offset) : 0;
+    const limit = req.query.limit ? parseInt(req.query.limit) : 10; // Set a default limit if none is provided
+
 
     // Define the query options
     let options = {
@@ -19,6 +18,7 @@ export const getAllCourses = async (req, res) => {
       },
       include: [{
         model: CourseCandidate,
+        as: 'courseCandidates', // Use the alias defined in your model associations
         required: false // Left join
       }],
       order: [['course_id', 'DESC']],
@@ -43,5 +43,6 @@ export const getAllCourses = async (req, res) => {
     res.status(500).json({ error: 'Internal Server Error' });
   }
 };
+
 
   

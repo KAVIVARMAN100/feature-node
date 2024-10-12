@@ -6,7 +6,6 @@ import User from '../../../models/userModel.js';
 
 export const enrollment = async (req, res) => {
   const input = req.body;
-
   if (input.userId && input.candidateId && input.courseId && input.status) {
     try {
       const updateCandidate = await CourseCandidate.findOne({
@@ -105,6 +104,8 @@ const checkClashDate = async (input, candidate) => {
 };
 
 const updateCandidateData = async (updateCandidate, input, res) => {
+  console.log("This is updateCandidateData");
+  
   try {
     if (input.status === 'approved' ) {
       const clashDateResult = await checkClashDate(input, updateCandidate);

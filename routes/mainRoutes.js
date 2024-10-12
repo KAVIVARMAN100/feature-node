@@ -1,8 +1,7 @@
 import express from "express";
-import vendorRouter from "../modules/vendor/vendorRoutes.js";
+import rhyminRoutes from "../modules/vendor/rhyminAPI.js";
 
 
 const router = express.Router();
-console.log("enteringgg");
 
-export default [vendorRouter, router]; 
+export default [rhyminRoutes, router]; 

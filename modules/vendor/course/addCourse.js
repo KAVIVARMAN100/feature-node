@@ -2,8 +2,10 @@ import Course from "../../../models/courseModel.js";
 import Category from '../../../models/categoryModel.js';
 import SubCategory from '../../../models/subCategoryModel.js';
 import uniqid from "uniqid";
-import User from "../../../models/userModel.js"; // Ensure the User model is imported
+import User from "../../../models/userModel.js"; 
+import AppError from "../../../utils/AppError.js";
 import { Op } from "sequelize";
+
 
 export const addCourse = async (req, res) => {
   try {
@@ -14,7 +16,7 @@ export const addCourse = async (req, res) => {
     } = req.body;
 
     if (!userId || !courseName || !uid || !startDate || !endDate || !lastDateForNom ||
-        !session || !days || !description || !classSize || !instructors || !internalNotes) {
+        !session || !days || !description || !classSize || !instructors || !internalNotes ||!categoryId || !newCategory ||!subCategoryId ||!newSubCategory)  {
       return res.status(400).json({ error: 'Not enough information' });
     }
 
@@ -82,6 +84,8 @@ export const addCourse = async (req, res) => {
 };
 
 const checkCategory = async (categoryId, newCategory, subCategoryId, newSubCategory) => {
+  console.log(categoryId,"categoryId, newCategory, subCategoryId, newSubCategory");
+  
   if (newCategory && newSubCategory) {
     return addNewCategory(newCategory, newSubCategory);
   } else if (!newCategory && newSubCategory) {
@@ -145,7 +149,7 @@ export const getCategories = async (req, res) => {
 
 export const getHomeDetails = async (req, res) => {
   try {
-    const { filter, offset, limit } = req.body;
+    const { filter, offset, limit } = req.query;    
     const timezone = 'Asia/Brunei';
     const now = new Date();
     const startDate = new Date(now.setHours(0, 0, 0, 0));
@@ -239,5 +243,186 @@ export const getHomeDetails = async (req, res) => {
     return res.status(500).json({ error: error.message });
   }
 };
+
+export const getSubCategories = async (req, res, next) => {
+    try {
+        const categoryId = req.query.id;
+
+        if (!categoryId) {
+            return res.status(400).json({
+                status: 'error',
+                message: 'Category ID is required'
+            });
+        }
+
+        const subCategories = await SubCategory.findAll({
+            where: { category_id: categoryId },
+            attributes: ['id', 'name']
+        });
+          
+        if (subCategories.length === 0) {
+            return res.status(404).json({
+                message: 'No subcategories found for the provided category ID'
+            });
+        }
+
+        res.json({
+            data: subCategories
+        });
+    } catch (error) {
+        console.error('Error fetching subcategories:', error);
+        next(error); // Forward the error to the error handling middleware
+    }
+};
+
+
+
+export const editCourse = async (req, res, next) => {
+  try {
+      const {
+          courseId,
+          courseName,
+          uid,
+          startDate,
+          endDate,
+          lastDateForNom,
+          session,
+          days,
+          description,
+          classSize,
+          instructors,
+          internalNotes,
+          userId,
+          fileRemoved,
+          imgRemoved,
+          categoryId,
+          newCategory,
+          subCategoryId,
+          newSubCategory
+      } = req.body;
+
+      if (!courseName || !uid || !startDate || !endDate || !lastDateForNom || !session || !days || !description || !classSize || !instructors || !internalNotes) {
+          return next(new AppError('Not enough information', 400));
+      }
+
+      let userTypeId;
+      if (userId) {
+          const user = await User.findByPk(userId);
+          
+          if (!user) return next(new AppError('Not enough information', 400));
+          userTypeId = user.dataValues.user_type;
+      }
+
+      const course = await Course.findOne({
+          where: {
+              course_id: courseId,
+              ...(userTypeId !== 115 && { user_id: userId })
+          }
+      });
+
+      if (!course) return next(new AppError('Course not found.', 400));
+
+      // Pass the appropriate parameters to the checkCategory function
+      const categoryDetails = await checkCategory(categoryId, newCategory, subCategoryId, newSubCategory);
+      console.log(categoryDetails,"This will be the categoryDetails");
+console.log(courseName,);
+
+      course.course_name = courseName;
+      course.uid = uid;
+      course.start_date = startDate;
+      course.end_date = endDate;
+      course.lastDateForNom = lastDateForNom;
+      course.session = session;
+      course.days = days;
+      course.description = description;
+      course.class_size = classSize;
+      course.instructors = instructors;
+      course.internal_notes = internalNotes;
+      course.category_id = categoryDetails.categoryId;
+      course.subcategory_id = categoryDetails.subCategoryId;
+      
+
+      // if (fileRemoved === 'true') course.attachment = '';
+      // if (imgRemoved === 'true') course.img = '';
+
+      // // Handle file uploads if any
+      // if (req.files) {
+      //     if (req.files.file) {
+      //         const filePath = `/path/to/save/${req.files.file.name}`;
+      //         await req.files.file.mv(filePath);
+      //         course.attachment = filePath;
+      //     }
+
+      //     if (req.files.img) {
+      //         const imgPath = `/path/to/save/${req.files.img.name}`;
+      //         await req.files.img.mv(imgPath);
+      //         course.img = imgPath;
+      //     }
+      // }
+
+      await course.save();
+
+      // await sendCourseUpdateEmail({
+      //     courseId: course.course_id,
+      //     ipaId: course.user_id,
+      //     course_name: course.course_name
+      // });
+
+      res.json({ Message: 'Course is successfully updated!' });
+  } catch (error) {
+      console.error('Error updating course:', error);
+      next(error);
+  }
+};
+
+
+ 
+export const deleteCourse = async (req, res) => {
+    try {
+        const input = req.body; // Assuming the input comes in the request body
+        
+        if (!input.id) {
+            return res.status(400).json({ message: 'Bad Request: Not enough information' });
+        }
+
+        // Fetch userId if provided
+        let usertypeId;
+        if (input.userId) {
+            const user = await User.findOne({ where: { user_id: input.userId } });
+            if (user) {
+                usertypeId = user.user_type;
+            } else {
+                return res.status(400).json({ message: 'Not enough information' });
+            }
+        }
+
+        // Find the course by id
+        const course = await Course.findOne({
+            where: { course_id: input.id }
+        });
+
+        if (course) {
+            // Mark course as deleted
+            course.is_deleted = 1;
+            const result = await course.save();
+
+            if (result) {
+                return res.json({ message: 'Course has been deleted successfully!' });
+            } else {
+                return res.status(500).json({ message: 'Course deletion failed' });
+            }
+        } else {
+            return res.status(400).json({ message: 'Course not found' });
+        }
+    } catch (error) {
+        console.error('Error in deleteCourse:', error);
+        return res.status(500).json({ message: 'Internal Server Error' });
+    }
+};
+
+
+
+
+
 
 

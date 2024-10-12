@@ -4,7 +4,6 @@ import bcrypt from 'bcrypt';
 
 export const register = async (req, res) => {
     const { fullname, phoneNumber, email, password, confirmPassword, userType } = req.body;
-
     if (
         fullname &&
         phoneNumber &&

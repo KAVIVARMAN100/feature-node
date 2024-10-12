@@ -1,37 +1,35 @@
 import { DataTypes } from 'sequelize';
 import db from '../config/database.js';
-import Course from './courseModel.js'; // Adjust the path as necessary
 
-const CourseCandidate = db.define('course_candidate_tb', {
-  id: {
-    type: DataTypes.BIGINT,
-    primaryKey: true,
-    autoIncrement: true,
-    allowNull: false
-  },
-  course_id: {
-    type: DataTypes.BIGINT,
-    allowNull: false
-  },
-  candidate_id: {
-    type: DataTypes.BIGINT,
-    allowNull: false
-  },
-  ministry_id: {
-    type: DataTypes.BIGINT,
-    allowNull: false
-  },
-  status: {
-    type: DataTypes.STRING(50),
-    allowNull: false
-  },
-  attended: {
-    type: DataTypes.STRING(50),
-    allowNull: true // Assuming this can be null initially
-  }
+const CourseCandidate = db.define('CourseCandidate', {
+    id: {
+        type: DataTypes.BIGINT,
+        autoIncrement: true,
+        primaryKey: true
+    },
+    course_id: {
+        type: DataTypes.BIGINT,
+        allowNull: false
+    },
+    candidate_id: {
+        type: DataTypes.BIGINT,
+        allowNull: false
+    },
+    ministry_id: {
+        type: DataTypes.BIGINT,
+        allowNull: true // Set to true if this column can be null
+    },
+    status: {
+        type: DataTypes.STRING(50),
+        defaultValue: 'pending'
+    },
+    attended: {
+        type: DataTypes.STRING(50),
+        allowNull: true // Set to true if this column can be null
+    }
 }, {
-  tableName: 'course_candidate_tb',
-  timestamps: false // Assuming there are no createdAt or updatedAt columns
+    tableName: 'course_candidate_tb',
+    timestamps: false
 });
 
 export default CourseCandidate;
