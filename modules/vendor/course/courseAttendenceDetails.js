@@ -6,117 +6,81 @@ import Candidate from '../../../models/candidateModel.js';
 import AppError from '../../../utils/AppError.js';
 import { v4 as uuidv4 } from 'uuid'; // For generating a unique ID
 
-export const getCourseAttendedDetails = async (req, res, next) => {
+export const courseAttendedDetails = async (candidateId, status) => {
     try {
-        const candidateId = req.query.id;
-        const status = req.query.status;
-
+        
+        const currentDate = new Date().toISOString().split('T')[0] + ' 00:00:00'; // 'Y-m-d 00:00:00' format
+        
         if (!candidateId || !status) {
-            return next(new AppError('Not enough information', 400));
+            throw new AppError('Bad Request: Not enough information', 400);
         }
 
-        const date = new Date();
-        date.setHours(0, 0, 0, 0); // Setting time to 00:00:00
-
         let queryOptions = {
-            attributes: [
-                'course_id',
-                'candidate_id',
-                'attended',
-                'status',
-                [fn('COUNT', col('attendances.id')), 'attendedCount']
-            ],
+            where: {
+                candidate_id: candidateId,
+                status: 'approved'
+            },
             include: [
                 {
-                    model: Course,
+                    model: Course, // Join with the Course table
                     as: 'course',
-                    attributes: [
-                        'course_id', 'course_name', 'start_date', 'end_date', 'session', 'days', 'descriptions', 'attachment'
-                    ]
+                    attributes: ['course_name', 'start_date', 'end_date', 'session', 'days', 'descriptions', 'attachment']
                 },
                 {
-                    model: Attendance,
-                    as: 'attendances',
-                    attributes: [], // No need to select attributes from Attendance directly
-                    required: false,
-                    where: {
-                        candidate_id: col('CourseCandidate.candidate_id'),
-                        course_id: col('CourseCandidate.course_id')
-                    }
+                    model: Attendance, // Join with the Attendance table (if required)
+                    as: 'attendance',
+                    attributes: [[Sequelize.fn('COUNT', Sequelize.col('attendance.course_id')), 'attendedCount']],
+                    required: false // LEFT JOIN equivalent
                 }
             ],
-            group: [
-                'CourseCandidate.course_id',
-                'CourseCandidate.candidate_id',
-                'CourseCandidate.attended',
-                'CourseCandidate.status',
-                'course.course_id',
-                'course.course_name',
-                'course.start_date',
-                'course.end_date',
-                'course.session',
-                'course.days',
-                'course.descriptions',
-                'course.attachment'
-            ]
+            group: ['CourseCandidate.course_id']
         };
 
         if (status === 'current') {
-            queryOptions.where = {
-                candidate_id: candidateId,
-                status: 'approved',
-                attended: 'no',
-                '$course.start_date$': { [Op.lte]: date },
-                '$course.end_date$': { [Op.gte]: date }
+            queryOptions.where.attended = 'no';
+            queryOptions.include[0].where = {
+                start_date: { [Op.lte]: currentDate },
+                end_date: { [Op.gte]: currentDate }
             };
         } else if (status === 'done') {
-            queryOptions.where = {
-                candidate_id: candidateId,
-                status: 'approved',
-                '$course.end_date$': { [Op.lt]: date }
+            queryOptions.include[0].where = {
+                end_date: { [Op.lt]: currentDate }
             };
         } else if (status === 'upcoming') {
-            queryOptions.where = {
-                candidate_id: candidateId,
-                status: 'approved',
-                '$course.start_date$': { [Op.gt]: date }
+            queryOptions.include[0].where = {
+                start_date: { [Op.gt]: currentDate }
             };
-        } else {
-            return next(new AppError('Invalid status', 400));
+            delete queryOptions.include[1]; // No need for attendance in 'upcoming' case
         }
 
+        // Fetch course details
         const courseDetails = await CourseCandidate.findAll(queryOptions);
-        const courseDetailsArray = courseDetails.map(detail => detail.toJSON());
         let totalHours = 0;
 
-        const candidateDetails = await Candidate.findByPk(candidateId);
+        // Fetch candidate details
+        const candidateDetails = await Candidate.findOne({ where: { candidate_id: candidateId } });
 
-        if (courseDetailsArray.length) {
-            if (status === 'current' || status === 'done') {
-                for (let index = 0; index < courseDetailsArray.length; index++) {
-                    const attendedCount = parseInt(courseDetailsArray[index].attendedCount, 10);
-                    const dailyHours = courseDetailsArray[index['course.session']] === 'full' ? 6 : 3;
-                    courseDetailsArray[index].totalHoursAttended = attendedCount * dailyHours;
-                    totalHours += attendedCount * dailyHours;
-                }
-            }
-            res.json({
-                candidateDetails,
-                courseDetails: courseDetailsArray,
-                totalHours
-            });
-        } else {
-            res.json({
-                candidateDetails,
-                courseDetails: [],
-                totalHours: 0
+        // Calculate total hours for 'current' or 'done' courses
+        if (status === 'current' || status === 'done') {
+            courseDetails.forEach(detail => {
+                const attendedCount = parseInt(detail.dataValues.attendance[0]?.attendedCount || 0, 10);
+                const dailyHours = detail.course.session === 'full' ? 6 : 3;
+                detail.dataValues.totalHoursAttended = attendedCount * dailyHours;
+                totalHours += attendedCount * dailyHours;
             });
         }
+
+        return {
+            candidateDetails,
+            courseDetails,
+            totalHours
+        };
     } catch (error) {
         console.error('Error fetching course attended details:', error);
-        next(error);
+        throw new AppError('Failed to fetch course attended details', 500, error.message);
     }
 };
+
 
 
 

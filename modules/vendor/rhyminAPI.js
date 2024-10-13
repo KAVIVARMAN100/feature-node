@@ -19,8 +19,7 @@ import { deleteAnnouncement } from "./announcement/announcement.js";
 import { getAllCourses } from "./course/allCourse.js";
 import { editCourse } from "./course/addCourse.js";
 import { getSubCategories } from "./course/addCourse.js";
-import { getCourseAttendedDetails } from "./course/courseAttendenceDetails.js";
-import { deleteCourse } from "./course/addCourse.js";
+ import { deleteCourse } from "./course/addCourse.js";
 import { fetchCourseStatusReport } from "./course/statusReport.js";
 import { getCandidateCourse } from "./course/courseAttendenceDetails.js";
 import { getCourseUcid } from "./course/courseAttendenceDetails.js";
@@ -31,7 +30,7 @@ import { selfCandidateDetails } from "./candidate/editCandidate.js";
 import { getCandidateAttendance } from "./candidate/attendenceCandidate.js";
 import { deleteSelfEnrollment, getCourseEvaluation, saveCourseEvaluation } from "./candidate/deleteselfEnrollment.js";
 import { fetchCandidate, fetchCourseCandidate } from "./candidate/fetchCourseCandidate.js";
-
+import { courseAttendedDetails } from "./course/courseAttendenceDetails.js";
 
 
 
@@ -48,13 +47,13 @@ router.get('/api/course/getAllCourses', getAllCourses);
 router.get('/api/course/getcoursebysubcatid', getCourseBySubCatId);
 router.get('/api/course/validateuid', validateCourseUID);
 router.get('/api/course/homedetails', getHomeDetails);
-router.get('/api/course/fetchcoursecandidate', fetchCourseCandidate);//no
+router.get('/api/course/fetchcoursecandidate', fetchCourseCandidate);
 router.get('/api/course/fetchCandidate', fetchCandidate);//no
 router.post('/api/course/attendence', attendance);
 router.put('/api/course/editCourse', editCourse);
 router.get('/api/course/category', getCategories);
 router.get('/api/course/subcategory', getSubCategories);
-router.get('/api/course/coursecand', getCourseAttendedDetails);//no
+router.get('/api/course/coursecand', courseAttendedDetails);//no
 router.post('/api/course/delete', deleteCourse);
 router.post('/api/course/enrollment', enrollment);
 //verifyToken
@@ -65,12 +64,12 @@ router.get('/api/course/getucid', getCourseUcid);
 
 
 
-router.post('/api/candidate/addCandidate', addCandidate);//N0
+router.post('/api/candidate/addCandidate', addCandidate);
 router.get('/api/candidate/exists', candidateExist);
 router.get('/api/candidate/editCandidate/', editCandidate);
 router.get('/api/candidate/selfenrollment', addCandidateForApproval);
 router.get('/api/candidate/selfcandetails', selfCandidateDetails);
-router.get('/api/candidate/updateselfenrollment', updateSelfEnrollment);//N0
+router.get('/api/candidate/updateselfenrollment', updateSelfEnrollment);
 //    $candidate->post('/v1/candidate/getCertificate','getCertificate');
 router.get('/api/candidate/getCandidateAttendance', getCandidateAttendance);
 router.get('/api/candidate/deleteSelfEnrollment', deleteSelfEnrollment );

@@ -223,19 +223,10 @@ export const selfCandidateDetails = async (req, res) => {
         res.status(500).json({ message: 'Internal Server Error' });
     }
 };
+ 
 
-
-const addCourseCandidateDetail = async (input, newCandidate) => {
+export const addCourseCandidateDetail = async (input, newCandidate) => {
     try {
-        // Check if 'isConfirmed' does not exist in the input
-        if (!input.hasOwnProperty('isConfirmed')) {
-            const clashDateResult = await clashDateValidate(input, newCandidate);
-            if (clashDateResult.clashDate) {
-                return clashDateResult;
-            }
-        }
-
-        // Create a new CourseCandidate record
         const courseCandidate = await CourseCandidate.create({
             course_id: input.courseId,
             candidate_id: newCandidate.candidate_id,
@@ -243,84 +234,92 @@ const addCourseCandidateDetail = async (input, newCandidate) => {
             status: 'pending'
         });
 
-        if (courseCandidate) {
-            return { clashDate: false };
-        } else {
-            throw new Error('Failed to create CourseCandidate');
-        }
+        return courseCandidate; // Return the created instance if needed
     } catch (error) {
-        console.error('Error in addCourseCandidateDetail:', error);
-        throw error; // Re-throw the error to be handled by the calling function
+        console.error('Error creating CourseCandidate:', error);
+        throw new AppError('Failed to add course candidate detail', 500, error.message);
     }
 };
 
 
+
 export const updateSelfEnrollment = async (req, res) => {
     try {
-        const input = req.body;
+        console.log("Entering updateSelfEnrollment");
 
-        if (!input.courseId || !input.icNo || !input.ministryId || !input.departmentId || !input.ministry) {
-            return res.status(400).json({ message: 'Bad Request: Not enough information' });
+        const input = req.body;
+        console.log(input, "Received input for updateSelfEnrollment");
+
+        // Validate input
+        const requiredFields = ['courseId', 'icNo', 'ministryId', 'departmentId', 'ministry'];
+        const missingFields = requiredFields.filter(field => !input[field]);
+
+        if (missingFields.length) {
+            return res.status(400).json({ message: `Bad Request: Missing fields: ${missingFields.join(', ')}` });
         }
 
         const candidate = await Candidate.findOne({ where: { ic_number: input.icNo } });
+        console.log(candidate, "Retrieved candidate");
 
-        if (candidate) {
-            candidate.ministry = input.ministry;
-            candidate.department = input.departmentId;
-            await candidate.save();
-
-            const courseCandidateEntry = await CourseCandidate.findOne({
-                where: {
-                    candidate_id: candidate.candidate_id,
-                    course_id: input.courseId
-                }
-            });
-
-            if (!courseCandidateEntry) {
-                const clashDateDetails = await addCourseCandidateDetail(input, candidate);
-
-                if (typeof clashDateDetails === 'object' && clashDateDetails.clashDate) {
-                    return res.json(clashDateDetails);
-                }
-
-                const candidateEnrollment = await CandidateEnrollment.findOne({
-                    where: {
-                        candidate_id: candidate.candidate_id,
-                        course_id: input.courseId
-                    }
-                });
-
-                if (candidateEnrollment) {
-                    await candidateEnrollment.destroy();
-                }
-
-                const candidateDetails = await Candidate.findAll({
-                    include: [{
-                        model: CandidateEnrollment,
-                        as: 'candidateEnrollments',
-                        where: { course_id: input.courseId },
-                        attributes: []
-                    }],
-                    attributes: ['ic_number', 'candidate_id', 'candidate_name', 'position', 'salary_grade']
-                });
-
-                const selfEnrollmentCount = await CandidateEnrollment.count({
-                    where: { course_id: input.courseId }
-                });
-
-                return res.json({ data: candidateDetails, count: selfEnrollmentCount });
-            } else {
-                throw new Error('This candidate is already added to this course');
-            }
-        } else {
+        if (!candidate) {
             throw new Error('Candidate not available');
         }
+
+        // Update candidate details
+        candidate.ministry = input.ministry;
+        candidate.department = input.departmentId;
+        await candidate.save();
+
+        const courseCandidateEntry = await CourseCandidate.findOne({
+            where: {
+                candidate_id: candidate.candidate_id,
+                course_id: input.courseId
+            }
+        });
+        console.log(courseCandidateEntry, "Course candidate entry");
+
+        if (courseCandidateEntry) {
+            throw new Error('This candidate is already added to this course');
+        }
+console.log(input, candidate,"this is input, candidate");
+
+        const clashDateDetails = await addCourseCandidateDetail(input, candidate);
+        if (typeof clashDateDetails === 'object' && clashDateDetails.clashDate) {
+            return res.json(clashDateDetails);
+        }
+
+        const candidateEnrollment = await CandidateEnrollment.findOne({
+            where: {
+                candidate_id: candidate.candidate_id,
+                course_id: input.courseId
+            }
+        });
+
+        if (candidateEnrollment) {
+            await candidateEnrollment.destroy();
+        }
+
+        const candidateDetails = await Candidate.findAll({
+            include: [{
+                model: CandidateEnrollment,
+                as: 'candidateEnrollments',
+                where: { course_id: input.courseId },
+                attributes: []
+            }],
+            attributes: ['ic_number', 'candidate_id', 'candidate_name', 'position', 'salary_grade']
+        });
+
+        const selfEnrollmentCount = await CandidateEnrollment.count({
+            where: { course_id: input.courseId }
+        });
+
+        return res.json({ data: candidateDetails, count: selfEnrollmentCount });
     } catch (error) {
         console.error('Error in updateSelfEnrollment:', error);
         res.status(500).json({ message: 'Internal Server Error', error: error.message });
     }
 };
+
 
 
 // Helper function to add course for the candidate
