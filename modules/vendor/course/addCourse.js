@@ -154,8 +154,10 @@ export const getHomeDetails = async (req, res) => {
     const now = new Date();
     const startDate = new Date(now.setHours(0, 0, 0, 0));
     const endDate = new Date();
+     
     endDate.setMonth(endDate.getMonth() + 1, 0);
     endDate.setHours(0, 0, 0, 0);
+    console.log(endDate,"This is endDate from controller");
 
     let result = {};
 
@@ -171,6 +173,7 @@ export const getHomeDetails = async (req, res) => {
         offset: parseInt(offset, 10),
         limit: parseInt(limit, 10)
       });
+console.log(upcomingCourses,"This is upcomingCourses");
 
       const upcomingCoursesCount = await Course.count({
         where: {
@@ -180,7 +183,6 @@ export const getHomeDetails = async (req, res) => {
           is_deleted: 0
         }
       });
-
       result.upcomingCourses = upcomingCourses;
       result.upcomingCoursesCount = upcomingCoursesCount;
     }
